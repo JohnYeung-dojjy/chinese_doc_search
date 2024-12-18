@@ -20,7 +20,7 @@ def display_table():
     return base_layout(
         Table(
             Thead(
-                Tr(Th(name, scope="col") for name in ("ID", "Publisher", "Publish Location", "Publish Date", "Author Name", "Title", "Full Text")),
+                Tr(Th(name, scope="col") for name in ("Publisher", "Publish Location", "Publish Date", "Author Name", "Title", "Full Text", "Source File")),
                 cls=[
                     "text-s",
                     "uppercase",

@@ -40,11 +40,23 @@ class Article:
 class ArticleRow(Article):
     def __ft__(self):
         return Tr(
-            Td(self.id),
             Td(self.publisher),
             Td(self.publish_location),
-            Td(self.publish_date),
+            Td(self.publish_date, cls="text-nowrap"),
             Td(self.author_name),
             Td(self.title),
             Td(self.full_text),
+            Td(
+                A("link", href="#", target="_blank"), # open the document in a new tab
+                cls="text-blue-600"
+            ),
+            cls=[
+                "text-center",
+                "border-b",
+                "border-8",
+                "even:bg-blue-100",
+                "odd:bg-amber-100",
+                "hover:even:bg-blue-50",
+                "hover:odd:bg-amber-50",
+            ]
         )
