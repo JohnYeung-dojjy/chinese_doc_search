@@ -1,7 +1,7 @@
 from fasthtml.common import *
 from database import es
 from dataclass.article import ArticleRow
-
+from layout import base_layout
 
 def display_table():
     """Returns a table of first 10 entries in the database"""
@@ -17,9 +17,15 @@ def display_table():
         }
     )
     result = [item["_source"] for item in response["hits"]["hits"]]
-    return Div(
+    return base_layout(
         Table(
-            Thead(Th("ID"), Th("Publisher"), Th("Publish Location"), Th("Publish Date"), Th("Author Name"), Th("Title"), Th("Full Text")),
-            Tbody(ArticleRow.from_elastic_search_response(item) for item in result)
+            Thead(Tr(Th("ID"), Th("Publisher"), Th("Publish Location"), Th("Publish Date"), Th("Author Name"), Th("Title"), Th("Full Text"))),
+            Tbody(
+                *(ArticleRow.from_elastic_search_response(item) for item in result),
+            ),
+            cls=[
+                "table-auto",
+                "hover:table-fixed",
+            ]
         )
     )
