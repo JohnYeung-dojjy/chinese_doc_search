@@ -19,13 +19,21 @@ def display_table():
     result = [item["_source"] for item in response["hits"]["hits"]]
     return base_layout(
         Table(
-            Thead(Tr(Th("ID"), Th("Publisher"), Th("Publish Location"), Th("Publish Date"), Th("Author Name"), Th("Title"), Th("Full Text"))),
+            Thead(
+                Tr(Th(name, scope="col") for name in ("ID", "Publisher", "Publish Location", "Publish Date", "Author Name", "Title", "Full Text")),
+                cls=[
+                    "text-s",
+                    "uppercase",
+                    "bg-gray-500",
+                ]
+            ),
             Tbody(
                 *(ArticleRow.from_elastic_search_response(item) for item in result),
             ),
             cls=[
                 "table-auto",
-                "hover:table-fixed",
+                "w-11/12",
+                "text-l",
             ]
         )
     )
