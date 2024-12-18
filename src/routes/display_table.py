@@ -34,6 +34,7 @@ def display_table():
             cls=[
                 "table-auto",
                 "w-11/12",
+                "border-8",
                 "text-l",
             ]
         )
