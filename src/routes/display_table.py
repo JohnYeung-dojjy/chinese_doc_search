@@ -1,3 +1,4 @@
+import os
 from fasthtml.common import *
 from database import es
 from dataclass.article import ArticleRow
@@ -7,7 +8,7 @@ def display_table():
     """Returns a table of first 10 entries in the database"""
 
     response = es.search(
-        index="fake_chinese_articles_collection_data",
+        index=os.environ["ELASTICSEARCH_INDEX"],
         body={
             "query": {
                 "match_all": {}
