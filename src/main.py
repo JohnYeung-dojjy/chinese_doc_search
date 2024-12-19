@@ -5,6 +5,7 @@ from fasthtml.common import *
 from routes import (
     entry,
     display_table,
+    search_article,
 )
 
 
@@ -31,7 +32,9 @@ app = FastHTML(
     )
 )
 
-app.route("/", methods=["GET"])(entry.home)
-app.route("/display", methods=["GET"])(display_table.display_table)
+app.get("/")(entry.home)
+app.get("/display")(display_table.display_table)
+app.get("/search-article-page")(search_article.article_search_page)
+app.post("/search-article")(search_article.search_article)
 
 serve()
