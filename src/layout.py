@@ -5,8 +5,7 @@ def base_layout(*args, **kwargs):
         Nav(H1("Chinese Doc Search")),
         Div(*args, **kwargs,
             cls=[
-                "flex",
-                "justify-center",
+                "block",
             ]
         ),
         cls=[
