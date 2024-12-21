@@ -44,14 +44,14 @@ article_search_form = Form(
         Div(
             SearchLabel("Publisher", SearchInput(type="text", name="publisher")),
             SearchLabel("Publish Location", SearchInput(type="text", name="publish_location")),
-        ),
-        Div(
             SearchLabel("Publish Date Start", SearchInput(type="date", name="publish_date_start", placeholder="YYYY-MM-DD")),
             SearchLabel("Publish Date End", SearchInput(type="date", name="publish_date_end", placeholder="YYYY-MM-DD")),
         ),
-        SearchLabel("Author Name", SearchInput(type="text", name="author_name")),
-        SearchLabel("Title", SearchInput(type="text", name="title")),
-        SearchLabel("Full Text", SearchInput(type="text", name="full_text")),
+        Div(
+            SearchLabel("Author Name", SearchInput(type="text", name="author_name")),
+            SearchLabel("Title", SearchInput(type="text", name="title")),
+            SearchLabel("Full Text", SearchInput(type="text", name="full_text")),
+        ),
         cls=[
             "grid",
             "grid-cols-1",
