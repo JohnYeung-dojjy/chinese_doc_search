@@ -3,6 +3,7 @@ from layout import base_layout
 from database import es
 from dataclass.article import ArticleRow
 from functools import partial
+import chinese_converter
 
 SearchLabel = partial(Label, cls=[
     # "block",
@@ -90,6 +91,36 @@ def article_search_page():
         )
     )
 
+def _build_elastic_search_query(
+    publisher: str,
+    publish_location: str,
+    publish_date_start: str,
+    publish_date_end: str,
+    author_name: str,
+    title: str,
+    full_text: str,
+)->list[dict[str, dict[str, str|dict[str, str]]]]:
+    compound_queries = []
+    if publish_date_start and publish_date_end:
+        query = {"range": {"publish_date": {"gte": publish_date_start, "lte": publish_date_end}}}
+        compound_queries.append(query)
+    if publisher:
+        query = {"match_phrase": {"publisher_simplified": chinese_converter.t2s.convert(publisher)}}
+        compound_queries.append(query)
+    if publish_location:
+        query = {"match_phrase": {"publish_location_simplified": chinese_converter.t2s.convert(publish_location)}}
+        compound_queries.append(query)
+    if author_name:
+        query = {"match_phrase": {"author_name_simplified": chinese_converter.t2s.convert(author_name)}}
+        compound_queries.append(query)
+    if title:
+        query = {"match_phrase": {"title_simplified": chinese_converter.t2s.convert(title)}}
+        compound_queries.append(query)
+    if full_text:
+        query = {"match_phrase": {"full_text_simplified": chinese_converter.t2s.convert(full_text)}}
+        compound_queries.append(query)
+    return compound_queries
+
 # handles post request
 def search_article(
     publisher: str,
@@ -102,12 +133,24 @@ def search_article(
     per_page: int = 10,
     page_id: int = 0,
 ):
+    """Search article documents in elasticsearch with the given keywords"""
     es_search_body = {
         "query": {
-            "match_all": {}
+            "bool": {
+                "must": _build_elastic_search_query(
+                    publisher,
+                    publish_location,
+                    publish_date_start,
+                    publish_date_end,
+                    author_name,
+                    title,
+                    full_text,
+                ),
+            },
         },
         "size": per_page,
         "from": page_id*per_page,
+        "sort": {"publish_date": {"order": "desc"}},
     }
 
     response = es.search(
