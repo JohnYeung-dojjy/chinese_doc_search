@@ -10,6 +10,43 @@ FAKE_INDEX_NAME = 'fake_chinese_articles_collection_data'
 fake = Faker(["zh_TW", "zh_CN"])
 text_converter = opencc.OpenCC("t2s.json")
 
+INDEX_MAPPING = {
+    "properties": {
+        "id": {"type": "keyword"},
+        "publisher": {
+            "type": "text",
+        },
+        "publish_location": {
+            "type": "text",
+        },
+        "publish_date": {"type": "date"},
+        "author_name": {
+            "type": "text",
+        },
+        "title": {
+            "type": "text",
+        },
+        "full_text": {
+            "type": "text",
+        },
+        "publisher_simplified": {
+            "type": "text",
+        },
+        "publish_location_simplified": {
+            "type": "text",
+        },
+        "author_name_simplified": {
+            "type": "text",
+        },
+        "title_simplified": {
+            "type": "text",
+        },
+        "full_text_simplified": {
+            "type": "text",
+        },
+    }
+}
+
 def connect_elasticsearch(port: int):
     """Connect to local hosted elasticsearch"""
     es = Elasticsearch(f"http://localhost:{port}")
@@ -25,7 +62,7 @@ def connect_elasticsearch(port: int):
 def create_fake_data_index(es: Elasticsearch):
     """Create fake data index in elasticsearch"""
     if es.indices.exists(index=FAKE_INDEX_NAME).body:
-        confirm_delete = input(f"Index {FAKE_INDEX_NAME} already exists, do you want to delete and rewrite it? (y/n)")
+        confirm_delete = input(f"Index {FAKE_INDEX_NAME} already exists, do you want to delete and rewrite it? (y/n): ")
         if confirm_delete.lower() != 'y':
             exit("Index not deleted")
     es.indices.delete(index=FAKE_INDEX_NAME, ignore_unavailable=True)
@@ -38,6 +75,7 @@ def create_fake_data_index(es: Elasticsearch):
             }
         },
     )
+    es.indices.put_mapping(index=FAKE_INDEX_NAME, body=INDEX_MAPPING)
 
 def create_fake_article_entry(es: Elasticsearch):
     """Create fake article entry in elasticsearch with the following entries:
@@ -56,7 +94,7 @@ def create_fake_article_entry(es: Elasticsearch):
         "publish_date": fake.date(),
         "author_name": fake.name(),
         "title": fake.sentence(),
-        "full_text": fake.text(),
+        "full_text": fake.text(1000),
     }
     for field_name in ["publisher", "publish_location", "author_name", "title", "full_text"]:
         fake_data[f"{field_name}_simplified"] = text_converter.convert(fake_data[field_name])
