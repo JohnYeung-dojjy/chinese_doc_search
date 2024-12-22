@@ -1,9 +1,19 @@
+from typing import Literal
 from fasthtml.common import *
 from layout import base_layout
 from database import es
-from dataclass.article import ArticleRow
+from dataclass.article import ArticleRow, HighlightSettings
 from functools import partial
 import chinese_converter
+
+# Special string used in elasticsearch highlight
+# used to split the highlighted simplified text and
+# get the correct offset to add the highlight in original text
+HIGHLIGHT_SETTINGS = HighlightSettings(
+    es_highlight_token="~!~",
+    start_token="<mark>",
+    end_token="</mark>",
+)
 
 SearchLabel = partial(Label, cls=[
     # "block",
@@ -148,6 +158,20 @@ def search_article(
                 ),
             },
         },
+        "highlight" : {
+            "pre_tags" : [HIGHLIGHT_SETTINGS.es_highlight_token],
+            "post_tags" : [HIGHLIGHT_SETTINGS.es_highlight_token],
+            # get the highlighted full text, so we can somehow extract the offsets and cast the highlight to the original text
+            # We should not display the simplified text to user due to library practices
+            "number_of_fragments": 0,
+            "fields" : {
+                "publisher_simplified" : {},
+                "publish_location_simplified": {},
+                "author_name_simplified": {},
+                "title_simplified": {},
+                "full_text_simplified": {},
+            }
+        },
         "size": per_page,
         "from": page_id*per_page,
         "sort": {"publish_date": {"order": "desc"}},
@@ -157,7 +181,8 @@ def search_article(
         index=os.environ["ELASTICSEARCH_INDEX"],
         body=es_search_body,
     )
-    result = [item["_source"] for item in response["hits"]["hits"]]
+
+    queried_documents: list[dict[Literal["_source", "highlight"], Any]] = response["hits"]["hits"]
 
     return Table(
         Thead(
@@ -169,7 +194,7 @@ def search_article(
             ]
         ),
         Tbody(
-            *(ArticleRow.from_elastic_search_response(item) for item in result),
+            *(ArticleRow.from_elastic_search_response(doc, HIGHLIGHT_SETTINGS) for doc in queried_documents),
         ),
         cls=[
             "table-auto",
