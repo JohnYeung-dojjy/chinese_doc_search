@@ -13,6 +13,8 @@ HIGHLIGHT_SETTINGS = HighlightSettings(
     es_highlight_token="~!~",
     start_token="<mark>",
     end_token="</mark>",
+    segment_max_length=20,
+    segment_token=" <b>...</b> "
 )
 
 SearchLabel = partial(Label, cls=[
