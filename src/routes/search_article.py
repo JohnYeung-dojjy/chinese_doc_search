@@ -179,6 +179,24 @@ def _build_elastic_search_query(
             compound_queries.append(query)
     return compound_queries
 
+ArticleTable = partial(
+    Table,
+    Thead(
+        Tr(Th(name, scope="col") for name in ("Publisher", "Publish Location", "Publish Date", "Author Name", "Title", "Full Text", "Source File")),
+        cls=[
+            "text-s",
+            "uppercase",
+            "bg-gray-500",
+        ]
+    ),
+    cls=[
+        "table-auto",
+        "w-11/12",
+        "border-8",
+        "text-l",
+    ]
+)
+
 # handles post request
 def search_article(
     publisher: str,
@@ -192,6 +210,8 @@ def search_article(
     page_id: int = 0,
 ):
     """Search article documents in elasticsearch with the given keywords"""
+    if not any([publisher, publish_location, publish_date_start, publish_date_end, author_name, title, full_text]):
+        return ArticleTable()
     try:
         search_query = _build_elastic_search_query(
             publisher,
@@ -245,22 +265,8 @@ def search_article(
 
     queried_documents: list[dict[Literal["_source", "highlight"], Any]] = response["hits"]["hits"]
 
-    return Table(
-        Thead(
-            Tr(Th(name, scope="col") for name in ("Publisher", "Publish Location", "Publish Date", "Author Name", "Title", "Full Text", "Source File")),
-            cls=[
-                "text-s",
-                "uppercase",
-                "bg-gray-500",
-            ]
-        ),
+    return ArticleTable(
         Tbody(
             *(ArticleRow.from_elastic_search_response(doc, HIGHLIGHT_SETTINGS) for doc in queried_documents),
-        ),
-        cls=[
-            "table-auto",
-            "w-11/12",
-            "border-8",
-            "text-l",
-        ]
+        )
     )
