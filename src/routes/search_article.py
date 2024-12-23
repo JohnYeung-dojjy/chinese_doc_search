@@ -5,6 +5,7 @@ from database import es
 from dataclass.article import ArticleRow, HighlightSettings
 from functools import partial
 import chinese_converter
+import re
 
 # Special string used in elasticsearch highlight
 # used to split the highlighted simplified text and
@@ -103,6 +104,52 @@ def article_search_page():
         )
     )
 
+def _is_query_valid(query: str) -> bool:
+    """Query is valid if there are no consecutive &|, parsing brackets is complicated"""
+    # TODO: support brackets
+    invalid_pattern = "|".join([
+        r"([&|]{2,})", # check if there are consecutive symbols
+    ])
+    if re.search(invalid_pattern, query):
+        return False
+    return True
+    # bracket_count = 0
+    # for char in query:
+    #     if char == "(":
+    #         bracket_count += 1
+    #     elif char == ")":
+    #         bracket_count -= 1
+    #     if bracket_count > 1:
+    #         return False
+    # return bracket_count == 0
+
+def _parse_query(query: str, target_field: str):
+    """Parse user input query (containing `&`, `|`) to elasticsearch query
+
+    Args:
+        query (str): User input query containing keywords
+    """
+
+    query = query.replace(" ", "")
+    or_queries = query.split("|")
+    and_queries = [subquery.split("&") for subquery in or_queries]
+
+    es_query = {"bool": {"should": []}}
+
+    for and_query in and_queries:
+        if len(and_query) == 1:
+            q = {"match_phrase": {target_field: and_query[0]}}
+        else:
+            q = {
+                "bool": {
+                    "must": [
+                        {"match_phrase": {target_field: item}} for item in and_query
+                    ]
+                }
+            }
+        es_query["bool"]["should"].append(q)
+    return es_query
+
 def _build_elastic_search_query(
     publisher: str,
     publish_location: str,
@@ -112,25 +159,24 @@ def _build_elastic_search_query(
     title: str,
     full_text: str,
 )->list[dict[str, dict[str, str|dict[str, str]]]]:
+
+    errors = {}
+    local_variables = locals()
+    for name in ["publisher", "publish_location", "author_name", "title", "full_text"]:
+        if not _is_query_valid(local_variables[name]):
+            errors[name] = "Invalid query, nested brackets or open/close brackets does not match, consecutive &| is not allowed"
+    if errors:
+        raise ValueError(errors)
+
     compound_queries = []
     if publish_date_start and publish_date_end:
         query = {"range": {"publish_date": {"gte": publish_date_start, "lte": publish_date_end}}}
         compound_queries.append(query)
-    if publisher:
-        query = {"match_phrase": {"publisher_simplified": chinese_converter.t2s.convert(publisher)}}
-        compound_queries.append(query)
-    if publish_location:
-        query = {"match_phrase": {"publish_location_simplified": chinese_converter.t2s.convert(publish_location)}}
-        compound_queries.append(query)
-    if author_name:
-        query = {"match_phrase": {"author_name_simplified": chinese_converter.t2s.convert(author_name)}}
-        compound_queries.append(query)
-    if title:
-        query = {"match_phrase": {"title_simplified": chinese_converter.t2s.convert(title)}}
-        compound_queries.append(query)
-    if full_text:
-        query = {"match_phrase": {"full_text_simplified": chinese_converter.t2s.convert(full_text)}}
-        compound_queries.append(query)
+
+    for name in ["publisher", "publish_location", "author_name", "title", "full_text"]:
+        if value:=local_variables[name]:
+            query = _parse_query(chinese_converter.t2s.convert(value), f"{name}_simplified")
+            compound_queries.append(query)
     return compound_queries
 
 # handles post request
@@ -146,18 +192,31 @@ def search_article(
     page_id: int = 0,
 ):
     """Search article documents in elasticsearch with the given keywords"""
+    try:
+        search_query = _build_elastic_search_query(
+            publisher,
+            publish_location,
+            publish_date_start,
+            publish_date_end,
+            author_name,
+            title,
+            full_text,
+        )
+    except ValueError as e:
+        #TODO: display error in form and remove content in table
+        return Div(
+            P(str(e)),
+            cls=[
+                "flex",
+                "w-full",
+                "justify-self-start",
+                "border-8",
+            ]
+        )
     es_search_body = {
         "query": {
             "bool": {
-                "must": _build_elastic_search_query(
-                    publisher,
-                    publish_location,
-                    publish_date_start,
-                    publish_date_end,
-                    author_name,
-                    title,
-                    full_text,
-                ),
+                "must": search_query,
             },
         },
         "highlight" : {
