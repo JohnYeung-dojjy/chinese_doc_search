@@ -2,5 +2,5 @@ elasticsearch==8.17.0
 faker==33.1.0
 opencc==1.1.9
 python-dotenv==1.0.1
-python-fasthtml==0.10.1
+python-fasthtml==0.10.2
 tqdm==4.67.1
