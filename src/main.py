@@ -15,6 +15,7 @@ debug = os.environ["DEBUG"].upper() == "TRUE"
 app = FastHTML(
     title="Chinese Doc Search",
     debug=debug,
+    pico=False, # disable pico css, only use Tailwind
     hdrs=(
         # JQuery
         Script(
