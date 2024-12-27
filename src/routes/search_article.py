@@ -246,7 +246,15 @@ def _build_elastic_search_query(
     return compound_queries
 
 ARTICLE_TABLE_HEAD = Thead(
-    Tr(Th(name, scope="col") for name in ("Publisher", "Publish Location", "Publish Date", "Author Name", "Title", "Full Text", "Source File")),
+    Tr(
+        Th("Publisher", scope="col", cls="w-1/12"),
+        Th("Publish Location", scope="col", cls="w-1/12"),
+        Th("Publish Date", scope="col", cls="w-1/12"),
+        Th("Author Name", scope="col", cls="w-1/12"),
+        Th("Title", scope="col", cls="w-1/12"),
+        Th("Full Text", scope="col", cls="w-1/2"),
+        Th("Source File", scope="col", cls="w-1/12"),
+    ),
     cls=[
         "text-s",
         "uppercase",
@@ -254,7 +262,7 @@ ARTICLE_TABLE_HEAD = Thead(
     ]
 )
 ARTICLE_TABLE_CLS = cls=[
-        "table-auto",
+        "table-fixed",
         "w-11/12",
         "border-8",
         "text-l",
@@ -357,6 +365,7 @@ def search_article(
             "justify-between",
             "px-8",
             "py-2",
+            "w-11/12",
         ]
     )
 
@@ -367,6 +376,7 @@ def search_article(
             Tbody(
                 *(ArticleRow.from_elastic_search_response(doc, HIGHLIGHT_SETTINGS) for doc in queried_documents),
             ),
+            cls=ARTICLE_TABLE_CLS,
         ),
         pagination,
     )
