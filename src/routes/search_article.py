@@ -245,23 +245,20 @@ def _build_elastic_search_query(
             compound_queries.append(query)
     return compound_queries
 
-ArticleTable = partial(
-    Table,
-    Thead(
-        Tr(Th(name, scope="col") for name in ("Publisher", "Publish Location", "Publish Date", "Author Name", "Title", "Full Text", "Source File")),
-        cls=[
-            "text-s",
-            "uppercase",
-            "bg-gray-500",
-        ]
-    ),
+ARTICLE_TABLE_HEAD = Thead(
+    Tr(Th(name, scope="col") for name in ("Publisher", "Publish Location", "Publish Date", "Author Name", "Title", "Full Text", "Source File")),
     cls=[
+        "text-s",
+        "uppercase",
+        "bg-gray-500",
+    ]
+)
+ARTICLE_TABLE_CLS = cls=[
         "table-auto",
         "w-11/12",
         "border-8",
         "text-l",
     ]
-)
 
 # handles post request
 def search_article(
@@ -277,7 +274,7 @@ def search_article(
 ):
     """Search article documents in elasticsearch with the given keywords"""
     if not any([publisher, publish_location, publish_date_start, publish_date_end, author_name, title, full_text]):
-        return ArticleTable()
+        return Table(ARTICLE_TABLE_HEAD, cls=ARTICLE_TABLE_CLS)
     try:
         search_query = _build_elastic_search_query(
             publisher,
@@ -299,6 +296,9 @@ def search_article(
                 "border-8",
             ]
         )
+    # Avoid hacker
+    per_page = max(per_page, 1)
+    page_id = max(page_id, 0)
     es_search_body = {
         "query": {
             "bool": {
@@ -331,8 +331,41 @@ def search_article(
 
     queried_documents: list[dict[Literal["_source", "highlight"], Any]] = response["hits"]["hits"]
 
-    return ArticleTable(
-        Tbody(
-            *(ArticleRow.from_elastic_search_response(doc, HIGHLIGHT_SETTINGS) for doc in queried_documents),
-        )
+    total_pages = math.ceil(response['hits']['total']['value'] / per_page)
+    curr_page = page_id + 1
+    prev_page_btn = None if curr_page==1 else Button(
+        "Previous", type="submit", id=f"page_{page_id-1}",
+        onclick="pageNum-=1",
+        hx_include="#article_search_form",
+        hx_vals=r"js:{per_page: perPage, page_id: pageNum}",
+        **FORM_SUBMISSION_HTMX_KW, cls=BTN_ACTIVATED_CLS,
+    )
+    next_page_btn = None if curr_page==total_pages else Button(
+        "Next", type="submit", id=f"page_{page_id+1}",
+        onclick="pageNum+=1",
+        hx_include="#article_search_form",
+        hx_vals=r"js:{per_page: perPage, page_id: pageNum}",
+        **FORM_SUBMISSION_HTMX_KW, cls=BTN_ACTIVATED_CLS,
+    )
+    pagination = Div(
+        Div(prev_page_btn),
+        Span(f"Showing page {curr_page} of {total_pages}", cls="inline-block align-middle hover:align-top"),
+        Div(next_page_btn),
+        cls=[
+            "flex",
+            "justify-between",
+            "px-8",
+            "py-2",
+        ]
+    )
+
+    return Div(
+        pagination,
+        Table(
+            ARTICLE_TABLE_HEAD,
+            Tbody(
+                *(ArticleRow.from_elastic_search_response(doc, HIGHLIGHT_SETTINGS) for doc in queried_documents),
+            ),
+        ),
+        pagination,
     )
