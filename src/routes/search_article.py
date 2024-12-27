@@ -26,6 +26,7 @@ BTN_DEACTIVATED_CLS = "bg-blue-200 hover:bg-blue-700 text-white font-bold py-2 p
 FORM_SUBMISSION_HTMX_KW = dict(
     method="post",
     hx_post="/search-article",
+    hx_vals=r"js:{per_page: perPage, page_id: pageNum}",
     hx_target="#search_result_table",
     hx_swap="innerHTML",
 )
@@ -91,7 +92,6 @@ SearchInput = partial(Input, cls=[
 article_search_form = Form(
     id="article_search_form",
     onclick="perNum=0",
-    hx_vals=r"js:{per_page: perPage, page_id: pageNum}",
     **FORM_SUBMISSION_HTMX_KW,
 )(
     Fieldset(
@@ -337,14 +337,12 @@ def search_article(
         "Previous", type="submit", id=f"page_{page_id-1}",
         onclick="pageNum-=1",
         hx_include="#article_search_form",
-        hx_vals=r"js:{per_page: perPage, page_id: pageNum}",
         **FORM_SUBMISSION_HTMX_KW, cls=BTN_ACTIVATED_CLS,
     )
     next_page_btn = None if curr_page==total_pages else Button(
         "Next", type="submit", id=f"page_{page_id+1}",
         onclick="pageNum+=1",
         hx_include="#article_search_form",
-        hx_vals=r"js:{per_page: perPage, page_id: pageNum}",
         **FORM_SUBMISSION_HTMX_KW, cls=BTN_ACTIVATED_CLS,
     )
     pagination = Div(
