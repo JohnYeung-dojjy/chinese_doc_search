@@ -272,7 +272,10 @@ def search_article(
     per_page: int,
     page_id: int,
 ):
-    """Search article documents in elasticsearch with the given keywords"""
+    """Search article documents in elasticsearch with the given keywords
+
+    We could use search-after and cache the results to make the search more efficient for large amount of requests
+    reference to: https://www.youtube.com/watch?v=8noSYHuTeSM"""
     if not any([publisher, publish_location, publish_date_start, publish_date_end, author_name, title, full_text]):
         return Table(ARTICLE_TABLE_HEAD, cls=ARTICLE_TABLE_CLS)
     try:
