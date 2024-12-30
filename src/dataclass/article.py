@@ -141,6 +141,8 @@ class Article:
 
     @classmethod
     def from_elastic_search_response(cls, es_query_res: dict[Literal["_source", "highlight"], Any], highlight_settings: HighlightSettings):
+        if "highlight" not in es_query_res:
+            es_query_res["highlight"] = {}
         return cls(
             id=es_query_res["_source"]["id"],
             publisher=_get_highlighted_text(es_query_res["_source"]["publisher"], es_query_res["highlight"].get("publisher_simplified"), highlight_settings),
