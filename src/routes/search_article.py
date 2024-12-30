@@ -138,7 +138,7 @@ article_search_form = Form(
             ]
         ),
         Button("Search", type="submit",
-            onclick="perNum=0;shouldAddSearchHistory = true;",
+            onclick="pageNum=0;shouldAddSearchHistory = true;",
             cls="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded",
         ),
         cls="flex justify-between"
