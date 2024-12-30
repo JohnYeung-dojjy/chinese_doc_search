@@ -156,6 +156,27 @@ article_search_form = Form(
 def article_search_page():
     return base_layout(
         Div(
+            Details(
+                Summary("How to search"),
+                Ul(
+                    Li("User can use '|' (OR) and '&' (AND) to create complex query."),
+                    Li(
+                        "These formats are accepted in publish_date field:",
+                        Ol(
+                            Li("YYYY"),
+                            Li("YYYYMM"),
+                            Li("YYYY-YYYY"),
+                            Li("YYYYMM-YYYYMM"),
+                            cls="list-disc list-inside ml-8"
+                        )
+                    ),
+                    cls="list-disc list-inside ml-4"
+                ),
+                open=True,
+            ),
+            cls="border-8 rounded bg-indigo-100",
+        ),
+        Div(
             article_search_form,
             cls=[
                 "flex",
