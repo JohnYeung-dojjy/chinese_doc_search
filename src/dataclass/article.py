@@ -107,6 +107,29 @@ def _get_highlighted_text(original_text: str, highlighted_simplified_text: list[
     return "".join(output_constructor)
 
 @dataclass
+class ArticleSearchQuery:
+    publisher: str
+    publish_location: str
+    publish_date_start: str
+    publish_date_end: str
+    author_name: str
+    title: str
+    full_text: str
+
+    def non_empty(self)->bool:
+        return any([self.publisher, self.publish_location, self.publish_date_start, self.publish_date_end, self.author_name, self.title, self.full_text])
+
+    def __ft__(self):
+        return Table(
+            Tbody(*[
+                Tr(
+                    Td(field.replace("_", " ").title()),
+                    Td(val or '-')
+                ) for field, val in self.__dict__.items()
+            ])
+        )
+
+@dataclass
 class Article:
     id: str
     publisher: str

@@ -2,7 +2,7 @@ from typing import Literal
 from fasthtml.common import *
 from layout import base_layout
 from database import es
-from dataclass.article import ArticleRow, HighlightSettings
+from dataclass.article import ArticleSearchQuery, ArticleRow, HighlightSettings
 from functools import partial
 import chinese_converter
 import re
@@ -216,33 +216,24 @@ def _parse_query(query: str, target_field: str):
         es_query["bool"]["should"].append(q)
     return es_query
 
-def _build_elastic_search_query(
-    publisher: str,
-    publish_location: str,
-    publish_date_start: str,
-    publish_date_end: str,
-    author_name: str,
-    title: str,
-    full_text: str,
-)->list[dict[str, dict[str, str|dict[str, str]]]]:
-
+def _build_elastic_search_query(query: ArticleSearchQuery)->list[dict[str, dict[str, str|dict[str, str]]]]:
+    TEXT_FIELDS = ["publisher", "publish_location", "author_name", "title", "full_text"]
     errors = {}
-    local_variables = locals()
-    for name in ["publisher", "publish_location", "author_name", "title", "full_text"]:
-        if not _is_query_valid(local_variables[name]):
+    for name in TEXT_FIELDS:
+        if not _is_query_valid(getattr(query, name)):
             errors[name] = "Invalid query, nested brackets or open/close brackets does not match, consecutive &| is not allowed"
     if errors:
         raise ValueError(errors)
 
     compound_queries = []
-    if publish_date_start and publish_date_end:
-        query = {"range": {"publish_date": {"gte": publish_date_start, "lte": publish_date_end}}}
-        compound_queries.append(query)
+    if query.publish_date_start and query.publish_date_end:
+        es_query = {"range": {"publish_date": {"gte": query.publish_date_start, "lte": query.publish_date_end}}}
+        compound_queries.append(es_query)
 
-    for name in ["publisher", "publish_location", "author_name", "title", "full_text"]:
-        if value:=local_variables[name]:
-            query = _parse_query(chinese_converter.t2s.convert(value), f"{name}_simplified")
-            compound_queries.append(query)
+    for name in TEXT_FIELDS:
+        if value:=getattr(query, name):
+            es_query = _parse_query(chinese_converter.t2s.convert(value), f"{name}_simplified")
+            compound_queries.append(es_query)
     return compound_queries
 
 ARTICLE_TABLE_HEAD = Thead(
@@ -270,13 +261,7 @@ ARTICLE_TABLE_CLS = cls=[
 
 # handles post request
 def search_article(
-    publisher: str,
-    publish_location: str,
-    publish_date_start: str,
-    publish_date_end: str,
-    author_name: str,
-    title: str,
-    full_text: str,
+    article_search_query: ArticleSearchQuery,
     per_page: int,
     page_id: int,
 ):
@@ -284,18 +269,10 @@ def search_article(
 
     We could use search-after and cache the results to make the search more efficient for large amount of requests
     reference to: https://www.youtube.com/watch?v=8noSYHuTeSM"""
-    if not any([publisher, publish_location, publish_date_start, publish_date_end, author_name, title, full_text]):
+    if not article_search_query.non_empty():
         return Table(ARTICLE_TABLE_HEAD, cls=ARTICLE_TABLE_CLS)
     try:
-        search_query = _build_elastic_search_query(
-            publisher,
-            publish_location,
-            publish_date_start,
-            publish_date_end,
-            author_name,
-            title,
-            full_text,
-        )
+        search_query = _build_elastic_search_query(article_search_query)
     except ValueError as e:
         #TODO: display error in form and remove content in table
         return Div(
