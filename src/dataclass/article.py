@@ -1,3 +1,4 @@
+from email import errors
 from pydoc import text
 from typing import Literal
 from fasthtml.common import *
@@ -106,18 +107,79 @@ def _get_highlighted_text(original_text: str, highlighted_simplified_text: list[
 
     return "".join(output_constructor)
 
+TEXT_FIELDS = ["publisher", "publish_location", "author_name", "title", "full_text"]
 @dataclass
 class ArticleSearchQuery:
     publisher: str
     publish_location: str
-    publish_date_start: str
-    publish_date_end: str
+    publish_date: str
     author_name: str
     title: str
     full_text: str
 
     def non_empty(self)->bool:
-        return any([self.publisher, self.publish_location, self.publish_date_start, self.publish_date_end, self.author_name, self.title, self.full_text])
+        return any([self.publisher, self.publish_location, self.publish_date, self.author_name, self.title, self.full_text])
+
+    def get_errors(self)->dict[str, str]:
+        """Check if query is valid, return error messages if not valid.
+        Query is valid if there are no consecutive &|, parsing brackets is complicated
+        And the date format is correct
+        """
+        # TODO: support brackets
+        invalid_pattern = "|".join([
+            r"([&|]{2,})", # check if there are consecutive symbols
+        ])
+        errors = {}
+        for name in TEXT_FIELDS:
+            if re.search(invalid_pattern, getattr(self, name)):
+                errors[name] = "Invalid query, nested brackets or open/close brackets does not match, consecutive &| is not allowed"
+
+        valid_date_patterns = "|".join([
+            r"^(\d{4})$",
+            r"^(\d{6})$",
+            r"^(\d{4}-\d{4})$",
+            r"^(\d{6}-\d{6})$",
+        ])
+        if self.publish_date and not re.search(valid_date_patterns, self.publish_date): # if not empty and not match the patterns
+            errors["publish_date"] = "Invalid date format, accepted format: YYYY, YYYYMM, YYYY-YYYY, YYYYMM-YYYYMM"
+
+        return errors
+        # bracket_count = 0
+        # for char in query:
+        #     if char == "(":
+        #         bracket_count += 1
+        #     elif char == ")":
+        #         bracket_count -= 1
+        #     if bracket_count > 1:
+        #         return False
+        # return bracket_count == 0
+
+    def parse_date(self)->tuple[str, str]:
+        """Parse publish_date into start and end. Accepted format:
+        1. YYYY
+        2. YYYYMM
+        3. YYYY-YYYY
+        4. YYYYMM-YYYYMM
+        """
+        date_len = len(self.publish_date)
+        def _next_month(year: str, month: str):
+            if month != "12":
+                return f"{year}-{int(month)+1:02}-01"
+            return f"{int(year)+1}-01-01"
+
+        if date_len == 4:
+            return f"{self.publish_date}-01-01", f"{self.publish_date}-12-31"
+        elif date_len == 6:
+            year, month = self.publish_date[:4], self.publish_date[4:]
+            return f"{year}-{month}-01", _next_month(year, month)
+        elif date_len == 4+1+4:
+            start_year, end_year = self.publish_date.split("-")
+            return f"{start_year}-01-01", f"{end_year}-12-31"
+        else: # 6+1+6
+            start, end = self.publish_date.split("-")
+            start_year, start_month = start[:4], start[4:]
+            end_year, end_month = end[:4], end[4:]
+            return f"{start_year}-{start_month}-01", _next_month(end_year, end_month)
 
     def __ft__(self):
         return Table(

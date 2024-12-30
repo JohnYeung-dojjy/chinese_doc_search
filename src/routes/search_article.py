@@ -2,7 +2,7 @@ from typing import Literal
 from fasthtml.common import *
 from layout import base_layout
 from database import es
-from dataclass.article import ArticleSearchQuery, ArticleRow, HighlightSettings
+from dataclass.article import TEXT_FIELDS, ArticleSearchQuery, ArticleRow, HighlightSettings
 from functools import partial
 import chinese_converter
 import re
@@ -99,8 +99,7 @@ article_search_form = Form(
         Div(
             SearchLabel("Publisher", SearchInput(type="text", name="publisher")),
             SearchLabel("Publish Location", SearchInput(type="text", name="publish_location")),
-            SearchLabel("Publish Date Start", SearchInput(type="date", name="publish_date_start", placeholder="YYYY-MM-DD")),
-            SearchLabel("Publish Date End", SearchInput(type="date", name="publish_date_end", placeholder="YYYY-MM-DD")),
+            SearchLabel("Publish Date", SearchInput(type="text", name="publish_date", placeholder="YYYY-YYYY")),
         ),
         Div(
             SearchLabel("Author Name", SearchInput(type="text", name="author_name")),
@@ -197,25 +196,6 @@ def article_search_page():
         )
     )
 
-def _is_query_valid(query: str) -> bool:
-    """Query is valid if there are no consecutive &|, parsing brackets is complicated"""
-    # TODO: support brackets
-    invalid_pattern = "|".join([
-        r"([&|]{2,})", # check if there are consecutive symbols
-    ])
-    if re.search(invalid_pattern, query):
-        return False
-    return True
-    # bracket_count = 0
-    # for char in query:
-    #     if char == "(":
-    #         bracket_count += 1
-    #     elif char == ")":
-    #         bracket_count -= 1
-    #     if bracket_count > 1:
-    #         return False
-    # return bracket_count == 0
-
 def _parse_query(query: str, target_field: str):
     """Parse user input query (containing `&`, `|`) to elasticsearch query
 
@@ -244,17 +224,14 @@ def _parse_query(query: str, target_field: str):
     return es_query
 
 def _build_elastic_search_query(query: ArticleSearchQuery)->list[dict[str, dict[str, str|dict[str, str]]]]:
-    TEXT_FIELDS = ["publisher", "publish_location", "author_name", "title", "full_text"]
-    errors = {}
-    for name in TEXT_FIELDS:
-        if not _is_query_valid(getattr(query, name)):
-            errors[name] = "Invalid query, nested brackets or open/close brackets does not match, consecutive &| is not allowed"
+    errors = query.get_errors()
     if errors:
         raise ValueError(errors)
 
     compound_queries = []
-    if query.publish_date_start and query.publish_date_end:
-        es_query = {"range": {"publish_date": {"gte": query.publish_date_start, "lte": query.publish_date_end}}}
+    if query.publish_date:
+        gte, lte = query.parse_date()
+        es_query = {"range": {"publish_date": {"gte": gte, "lte": lte}}}
         compound_queries.append(es_query)
 
     for name in TEXT_FIELDS:
@@ -388,11 +365,13 @@ def search_article(
         Div(
             article_search_query,
             cls=[
-                "min-w-48",
+                "min-w-56",
                 "p-4",
                 "border-4",
                 "rounded-lg",
                 "bg-orange-400",
+                "items-center",
+                "content-center",
 
                 "fade-in",
             ],
