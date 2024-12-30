@@ -26,7 +26,7 @@ BTN_DEACTIVATED_CLS = "bg-blue-200 hover:bg-blue-700 text-white font-bold py-2 p
 FORM_SUBMISSION_HTMX_KW = dict(
     method="post",
     hx_post="/search-article",
-    hx_vals=r"js:{per_page: perPage, page_id: pageNum}",
+    hx_vals=r"js:{per_page: perPage, page_id: pageNum, add_search_history: shouldAddSearchHistory}",
     hx_target="#search_result_table",
     hx_swap="innerHTML",
 )
@@ -36,6 +36,7 @@ DEFAULT_DISPLAY_ROWS: int = 10
 PAGINATION_SETTING_JS = """
     let perPage = 10;
     let pageNum = 0;
+    let shouldAddSearchHistory = true;
 
     /* Must use function(){} else $(this) is the same as outer scope */
     $("[id^=id_per_page-]").on("click", function() {
@@ -45,6 +46,7 @@ PAGINATION_SETTING_JS = """
 
         perPage = $(this).val();
         pageNum = 0;
+        shouldAddSearchHistory = false;
 
         /* Update btn ui */
         $("[id^=id_per_page-]").each(function() {
@@ -91,7 +93,6 @@ SearchInput = partial(Input, cls=[
 
 article_search_form = Form(
     id="article_search_form",
-    onclick="perNum=0",
     **FORM_SUBMISSION_HTMX_KW,
 )(
     Fieldset(
@@ -138,6 +139,7 @@ article_search_form = Form(
             ]
         ),
         Button("Search", type="submit",
+            onclick="perNum=0;shouldAddSearchHistory = true;",
             cls="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded",
         ),
         cls="flex justify-between"
@@ -163,10 +165,35 @@ def article_search_page():
                 "border-8",
             ]
         ),
+        Div(
+            H2("Search history"),
+            Div(
+                id="search-history",
+                cls=[
+                    "h-48",
+                    "flex",
+                    "flex-row",
+                    "overflow-x-scroll",
+                    "text-xs",
+                    "text-center",
+                ]
+            )
+        ),
         Div(id="search_result_table",
             cls=[
                 "w-full",
             ]
+        ),
+        Style(
+            """
+            .fade-in.htmx-added {
+                opacity: 0;
+            }
+            .fade-in {
+                opacity: 1;
+                transition: opacity 1s ease-out;
+            }
+            """
         )
     )
 
@@ -264,6 +291,7 @@ def search_article(
     article_search_query: ArticleSearchQuery,
     per_page: int,
     page_id: int,
+    add_search_history: bool = False,
 ):
     """Search article documents in elasticsearch with the given keywords
 
@@ -323,13 +351,13 @@ def search_article(
     curr_page = page_id + 1
     prev_page_btn = None if curr_page==1 else Button(
         "Previous", type="submit", id=f"page_{page_id-1}",
-        onclick="pageNum-=1",
+        onclick="pageNum-=1;shouldAddSearchHistory=false;",
         hx_include="#article_search_form",
         **FORM_SUBMISSION_HTMX_KW, cls=BTN_ACTIVATED_CLS,
     )
     next_page_btn = None if curr_page==total_pages else Button(
         "Next", type="submit", id=f"page_{page_id+1}",
-        onclick="pageNum+=1",
+        onclick="pageNum+=1;shouldAddSearchHistory=false;",
         hx_include="#article_search_form",
         **FORM_SUBMISSION_HTMX_KW, cls=BTN_ACTIVATED_CLS,
     )
@@ -356,4 +384,18 @@ def search_article(
             cls=ARTICLE_TABLE_CLS,
         ),
         pagination,
-    )
+    ), Div( # Only add search history if it is trigger by the "Submit" button (new search)
+        Div(
+            article_search_query,
+            cls=[
+                "min-w-48",
+                "p-4",
+                "border-4",
+                "rounded-lg",
+                "bg-orange-400",
+
+                "fade-in",
+            ],
+        ),
+        hx_swap_oob="afterbegin:#search-history",
+    ) if add_search_history else None
