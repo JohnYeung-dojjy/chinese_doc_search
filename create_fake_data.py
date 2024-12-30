@@ -77,7 +77,7 @@ def create_fake_data_index(es: Elasticsearch):
     )
     es.indices.put_mapping(index=FAKE_INDEX_NAME, body=INDEX_MAPPING)
 
-def create_fake_article_entry(es: Elasticsearch):
+def create_fake_article_entry(es: Elasticsearch, full_text_len: int):
     """Create fake article entry in elasticsearch with the following entries:
     - id
     - publisher
@@ -94,25 +94,26 @@ def create_fake_article_entry(es: Elasticsearch):
         "publish_date": fake.date(),
         "author_name": fake.name(),
         "title": fake.sentence(),
-        "full_text": fake.text(1000),
+        "full_text": fake.text(full_text_len),
     }
     for field_name in ["publisher", "publish_location", "author_name", "title", "full_text"]:
         fake_data[f"{field_name}_simplified"] = text_converter.convert(fake_data[field_name])
     es.index(index=FAKE_INDEX_NAME, body=fake_data)
 
-def create_fake_data(es: Elasticsearch, num_entries: int):
+def create_fake_data(es: Elasticsearch, num_entries: int, full_text_len: int):
     """Create fake data in elasticsearch"""
     for i in tqdm(range(num_entries), desc="Creating fake article data"):
-        create_fake_article_entry(es)
+        create_fake_article_entry(es, full_text_len)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Create fake data in elasticsearch')
     parser.add_argument('--port', type=int, default=9200)
     parser.add_argument('--num_entries', type=int, default=1000)
+    parser.add_argument('--full_text_len', type=int, default=1000)
     args = parser.parse_args()
     es = connect_elasticsearch(args.port)
     if es is None:
         exit()
     create_fake_data_index(es)
-    create_fake_data(es, args.num_entries)
+    create_fake_data(es, args.num_entries, args.full_text_len)
     print("Done!")
