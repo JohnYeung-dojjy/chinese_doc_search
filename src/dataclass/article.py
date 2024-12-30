@@ -205,6 +205,10 @@ class Article:
     def from_elastic_search_response(cls, es_query_res: dict[Literal["_source", "highlight"], Any], highlight_settings: HighlightSettings):
         if "highlight" not in es_query_res:
             es_query_res["highlight"] = {}
+        if highlighted_full_text := es_query_res["highlight"].get("full_text_simplified"):
+            displayed_full_text = _get_highlighted_text(es_query_res["_source"]["full_text"], highlighted_full_text, highlight_settings)
+        else:
+            displayed_full_text = "Full text too long to be displayed, please provide search for a keyword in full text"
         return cls(
             id=es_query_res["_source"]["id"],
             publisher=_get_highlighted_text(es_query_res["_source"]["publisher"], es_query_res["highlight"].get("publisher_simplified"), highlight_settings),
@@ -212,7 +216,7 @@ class Article:
             publish_date=es_query_res["_source"]["publish_date"],
             author_name=_get_highlighted_text(es_query_res["_source"]["author_name"], es_query_res["highlight"].get("author_name_simplified"), highlight_settings),
             title=_get_highlighted_text(es_query_res["_source"]["title"], es_query_res["highlight"].get("title_simplified"), highlight_settings),
-            full_text=_get_highlighted_text(es_query_res["_source"]["full_text"], es_query_res["highlight"].get("full_text_simplified"), highlight_settings),
+            full_text=displayed_full_text,
         )
 
     def __ft__(self):
