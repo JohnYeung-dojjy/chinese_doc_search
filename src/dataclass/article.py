@@ -108,6 +108,9 @@ def _get_highlighted_text(original_text: str, highlighted_simplified_text: list[
     return "".join(output_constructor)
 
 TEXT_FIELDS = ["publisher", "publish_location", "author_name", "title", "full_text"]
+TEXT_FIELD_INVALID_MSG = "no consecutive '&', '|'"
+DATE_FIELD_INVALID_MSG = "Accepted date format: YYYY, YYYYMM, YYYY-YYYY, YYYYMM-YYYYMM"
+
 @dataclass
 class ArticleSearchQuery:
     publisher: str
@@ -128,11 +131,13 @@ class ArticleSearchQuery:
         # TODO: support brackets
         invalid_pattern = "|".join([
             r"([&|]{2,})", # check if there are consecutive symbols
+            r"^[&|]", # start with operator
+            r"[&|]$", # end with operator
         ])
         errors = {}
         for name in TEXT_FIELDS:
             if re.search(invalid_pattern, getattr(self, name)):
-                errors[name] = "Invalid query, nested brackets or open/close brackets does not match, consecutive &| is not allowed"
+                errors[name] = TEXT_FIELD_INVALID_MSG
 
         valid_date_patterns = "|".join([
             r"^(\d{4})$",
@@ -141,7 +146,7 @@ class ArticleSearchQuery:
             r"^(\d{6}-\d{6})$",
         ])
         if self.publish_date and not re.search(valid_date_patterns, self.publish_date): # if not empty and not match the patterns
-            errors["publish_date"] = "Invalid date format, accepted format: YYYY, YYYYMM, YYYY-YYYY, YYYYMM-YYYYMM"
+            errors["publish_date"] = DATE_FIELD_INVALID_MSG
 
         return errors
         # bracket_count = 0

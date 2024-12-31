@@ -2,7 +2,14 @@ from typing import Literal
 from fasthtml.common import *
 from layout import base_layout
 from database import es
-from dataclass.article import TEXT_FIELDS, ArticleSearchQuery, ArticleRow, HighlightSettings
+from dataclass.article import (
+    TEXT_FIELDS,
+    TEXT_FIELD_INVALID_MSG,
+    DATE_FIELD_INVALID_MSG,
+    ArticleSearchQuery,
+    ArticleRow,
+    HighlightSettings,
+)
 from functools import partial
 import chinese_converter
 import re
@@ -60,6 +67,20 @@ PAGINATION_SETTING_JS = """
         /* Resubmit the form */
         $("#search_result_table").submit();
     })
+
+    /* custom validate function for text input fields */
+    customValidate = function(query) {
+        const CONSECUTIVE_AND_OR = /([&|]{2,})|^[&|]|[&|]$/;
+        isValid = !CONSECUTIVE_AND_OR.test(query);
+        return isValid;
+    }
+    $("[id^=text-input-]").on("input", function(event) {
+        if (!customValidate(this.value)) {
+            this.setCustomValidity("no consecutive '&', '|'"); // This is the message display as the field error popup
+        } else {
+            this.setCustomValidity("");
+        }
+    });
 """
 
 SearchLabel = partial(Label, cls=[
@@ -78,6 +99,8 @@ SearchInput = partial(Input, cls=[
     "text-gray-900",
     "text-sm",
     "rounded-lg",
+    "peer",
+    "invalid:bg-red-300",
     "focus:ring-blue-500",
     "focus:border-blue-500",
     # "block",
@@ -90,6 +113,7 @@ SearchInput = partial(Input, cls=[
     # "dark:focus:ring-blue-500",
     # "dark:focus:border-blue-500",
 ])
+SearchInvalidMessage = partial(P, cls="w-64 text-nowrap invisible peer-invalid:visible text-red-600 text-sm")
 
 article_search_form = Form(
     id="article_search_form",
@@ -97,18 +121,41 @@ article_search_form = Form(
 )(
     Fieldset(
         Div(
-            SearchLabel("Publisher", SearchInput(type="text", name="publisher")),
-            SearchLabel("Publish Location", SearchInput(type="text", name="publish_location")),
-            SearchLabel("Publish Date", SearchInput(type="text", name="publish_date", placeholder="YYYY-YYYY")),
+            SearchLabel("Publisher",
+                SearchInput(type="text", name="publisher", id="text-input-publisher"),
+                SearchInvalidMessage(TEXT_FIELD_INVALID_MSG)
+            ),
+            SearchLabel("Publish Location",
+                SearchInput(type="text", name="publish_location", id="text-input-publish_location"),
+                SearchInvalidMessage(TEXT_FIELD_INVALID_MSG)
+            ),
+            SearchLabel("Publish Date",
+                SearchInput(type="text", name="publish_date", placeholder="YYYY(MM)(-YYYY(MM))",
+                    pattern=r"(\d{4}(-\d{4})?)|(\d{6}(-\d{6})?)"
+                ),
+                SearchInvalidMessage(DATE_FIELD_INVALID_MSG)
+            ),
+            cls="flex flex-row",
         ),
         Div(
-            SearchLabel("Author Name", SearchInput(type="text", name="author_name")),
-            SearchLabel("Title", SearchInput(type="text", name="title")),
-            SearchLabel("Full Text", SearchInput(type="text", name="full_text")),
+            SearchLabel("Author Name",
+                SearchInput(type="text", name="author_name", id="text-input-author_name"),
+                SearchInvalidMessage(TEXT_FIELD_INVALID_MSG)
+            ),
+            SearchLabel("Title",
+                SearchInput(type="text", name="title", id="text-input-title"),
+                SearchInvalidMessage(TEXT_FIELD_INVALID_MSG)
+            ),
+            SearchLabel("Full Text",
+                SearchInput(type="text", name="full_text", id="text-input-full_text"),
+                SearchInvalidMessage(TEXT_FIELD_INVALID_MSG)
+            ),
+            cls="flex flex-row",
         ),
         cls=[
             "grid",
             "grid-cols-1",
+            "w-full",
         ]
     ),
     Div(
@@ -149,6 +196,7 @@ article_search_form = Form(
         "p-2",
         "border-indigo-500/75",
         "rounded-lg",
+        "w-full",
     ]
 )
 
