@@ -27,4 +27,12 @@ Otherwise, please either:
 
 ## Previews
 
-    TODO
+The tests are done on 10,000 entries, each entries' full_text section is 10,000 characters long
+
+Please click on the links to watch the preview videos
+
+### [Basic query](https://www.awesomescreenshot.com/video/35106527?key=6a3a64a98bb46dd852c4f2df7fb58aff)
+
+### [Complex query](https://www.awesomescreenshot.com/video/35106750?key=bda05fd7d0c42b6a7eff989d68269240)
+
+### [Form error handling](https://www.awesomescreenshot.com/video/35106784?key=d495981c2384b162634235b4440b83a3)
