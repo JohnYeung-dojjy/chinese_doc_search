@@ -17,7 +17,7 @@ Otherwise, please either:
 
 ## How to run
 
-1. Setup ElasticSearch in docker and start the container, My version is 8.15.0
+1. Setup ElasticSearch in docker and start the container, My version is 8.15.0. [Reference](https://www.elastic.co/search-labs/tutorials/install-elasticsearch)
 2. create a `.env` file and define these variables in it
    -  `DEBUG`
    -  `ELASTICSEARCH_PORT`
