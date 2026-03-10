@@ -17,13 +17,30 @@ Otherwise, please either:
 
 ## How to run
 
+### Using Docker Compose (Recommended)
+
+The easiest way to run the entire application (ElasticSearch + FastHTML app):
+
+```bash
+docker-compose up --build
+```
+
+This will:
+- Start ElasticSearch on port 9200
+- Build and start the FastHTML app on port 7861
+- Wait for ElasticSearch to be healthy before starting the app
+
+Access the app at http://localhost:7861
+
+### Manual Setup
+
 1. Setup ElasticSearch in docker and start the container, My version is 8.15.0. [Reference](https://www.elastic.co/search-labs/tutorials/install-elasticsearch)
 2. create a `.env` file and define these variables in it
    -  `DEBUG`
    -  `ELASTICSEARCH_PORT`
    -  `ELASTICSEARCH_INDEX`
-3. `pip install -r requirements.txt`
-4. `python src/main.py`
+3. `uv sync`
+4. `uv run src/main.py`
 
 ## Previews
 
