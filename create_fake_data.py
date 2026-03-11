@@ -47,9 +47,9 @@ INDEX_MAPPING = {
     }
 }
 
-def connect_elasticsearch(port: int):
+def connect_elasticsearch(url: int):
     """Connect to local hosted elasticsearch"""
-    es = Elasticsearch(f"http://localhost:{port}")
+    es = Elasticsearch(f"{url}")
     try:
         client_info = es.info()
         print("Connected to Elasticsearch")
@@ -107,11 +107,11 @@ def create_fake_data(es: Elasticsearch, num_entries: int, full_text_len: int):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Create fake data in elasticsearch')
-    parser.add_argument('--port', type=int, default=9200)
+    parser.add_argument('--url', type=str, default="http://localhost:9200", help='Elasticsearch URL')
     parser.add_argument('--num_entries', type=int, default=1000)
     parser.add_argument('--full_text_len', type=int, default=1000)
     args = parser.parse_args()
-    es = connect_elasticsearch(args.port)
+    es = connect_elasticsearch(args.url)
     if es is None:
         exit()
     create_fake_data_index(es)

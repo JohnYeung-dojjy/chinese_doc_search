@@ -24,7 +24,7 @@ services:
     ports:
       - "7861:7861"
     environment:
-      - ELASTICSEARCH_PORT=9200
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
       - DEBUG=FALSE
     depends_on:
       elasticsearch:

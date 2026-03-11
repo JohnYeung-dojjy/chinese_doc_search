@@ -2,11 +2,11 @@ import os
 from elasticsearch import Elasticsearch
 
 
-ELASTICSEARCH_PORT = os.environ["ELASTICSEARCH_PORT"]
+ELASTICSEARCH_URL = os.environ["ELASTICSEARCH_URL"]
 
-def get_elasticsearch_connection(port: str):
+def get_elasticsearch_connection(url: str):
 
-    es = Elasticsearch(f"http://localhost:{port}")
+    es = Elasticsearch(f"{url}")
     try:
         client_info = es.info()
         print("Connected to Elasticsearch")
@@ -15,4 +15,4 @@ def get_elasticsearch_connection(port: str):
         exit("Unable to connect to elasticsearch")
     return es
 
-es = get_elasticsearch_connection(ELASTICSEARCH_PORT)
+es = get_elasticsearch_connection(ELASTICSEARCH_URL)
