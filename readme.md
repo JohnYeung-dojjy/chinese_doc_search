@@ -27,7 +27,7 @@ docker-compose up --build
 
 This will:
 - Start ElasticSearch on port 9200
-- Build and start the FastHTML app on port 7861
+- Build and start the FastHTML app on port 5001
 - Wait for ElasticSearch to be healthy before starting the app
 
 Access the app at http://localhost:5001
