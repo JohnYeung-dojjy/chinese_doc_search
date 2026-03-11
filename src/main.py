@@ -2,6 +2,8 @@ import os
 from dotenv import load_dotenv
 from fasthtml.common import *
 
+load_dotenv()
+
 from routes import (
     entry,
     display_table,
@@ -9,7 +11,6 @@ from routes import (
 )
 
 
-load_dotenv()
 
 debug = os.environ["DEBUG"].upper() == "TRUE"
 app = FastHTML(
