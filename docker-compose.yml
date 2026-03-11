@@ -22,7 +22,7 @@ services:
       dockerfile: Dockerfile
     container_name: fasthtml
     ports:
-      - "7861:7861"
+      - "5001:5001"
     environment:
       - ELASTICSEARCH_URL=http://elasticsearch:9200
       - DEBUG=FALSE

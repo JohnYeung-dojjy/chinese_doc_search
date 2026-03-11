@@ -33,7 +33,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 # Place executables in the environment at the front of the path
 ENV PATH="/app/.venv/bin:$PATH"
 
-EXPOSE 7861
+EXPOSE 5001
 # Reset the entrypoint, don't invoke `uv`
 ENTRYPOINT []
 
