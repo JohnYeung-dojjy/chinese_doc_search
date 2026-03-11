@@ -30,7 +30,7 @@ This will:
 - Build and start the FastHTML app on port 7861
 - Wait for ElasticSearch to be healthy before starting the app
 
-Access the app at http://localhost:7861
+Access the app at http://localhost:5001
 
 ### Manual Setup
 
